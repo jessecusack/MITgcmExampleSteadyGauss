@@ -85,7 +85,7 @@
  usingSphericalPolarGrid=.FALSE.,
  delXfile='delXvar.bin',
  delY=5.e3,
- delRfile = 'delZvar.bin',
+ delRfile='delZvar.bin',
 /
 
 # Input datasets
