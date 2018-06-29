@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import numpy.matlib as matlib
 import shutil
 import os
 
@@ -11,7 +10,7 @@ def lininc(n, Dx, dx0):
     return dx
 
 
-Fr = 0.13
+Fr = 0.06
 H = 2000.
 h0 = 500.
 om = 2.*np.pi/12.42/3600.
@@ -19,15 +18,12 @@ N0 = 5.2e-3
 u0 = Fr*N0*h0
 
 
-outdir = '../runs/RunFr{:1.3f}'.format(Fr)
-try:
+outdir = '../runs/RunFr{:1.3f}_tides'.format(Fr)
+
+if not os.path.exists(outdir):
     os.mkdir(outdir)
-except:
-    print(outdir+' Exists')
-try:
+if not os.path.exists(outdir+'/figs'):
     os.mkdir(outdir+'/figs')
-except:
-    print(outdir+'/figs Exists')
 
 shutil.copy('./gendata.py', outdir)
 
@@ -105,7 +101,7 @@ with open(outdir+"/TRef.bin", "wb") as f:
 
 
 # save T0 over whole domain
-TT0 = matlib.repmat(T0, nx, 1).T
+TT0 = np.tile(T0[:, np.newaxis], (1, nx))
 with open(outdir+"/T0.bin", "wb") as f:
     TT0.tofile(f)
 
@@ -122,8 +118,9 @@ dt = 3720.
 time = np.arange(0, 12.*3720., dt)
 print(time/3600./12.4)
 om = 2*np.pi/12.40/3600
-uw = u0+0.*time
-ue = u0+0.*time
+uw = u0*np.sin(om*time)
+ue = u0*np.sin(om*time)
+
 # plot:
 if True:
     plt.figure()
@@ -136,17 +133,8 @@ if True:
     plt.savefig(outdir+'/figs/Vels.pdf')
 
 # try time,nz,ny...
-
-uen = np.zeros((time.shape[0], nz, ny))
-for j in range(0, ny):
-    for i in range(0, nz):
-        uen[:, i, j] = ue
-
-uwn = np.zeros((time.shape[0], nz, ny))
-print(uwn.shape)
-for j in range(0, ny):
-    for i in range(0, nz):
-        uwn[:, i, j] = uw
+uwn = np.tile(uw[:, np.newaxis, np.newaxis], (1, nz, ny))
+uen = np.tile(ue[:, np.newaxis, np.newaxis], (1, nz, ny))
 
 with open(outdir+"/Ue.bin", "wb") as f:
     uen.tofile(f)
@@ -154,11 +142,7 @@ with open(outdir+"/Ue.bin", "wb") as f:
 with open(outdir+"/Uw.bin", "wb") as f:
     uwn.tofile(f)
 
-t = np.zeros((time.shape[0], nz, ny))
-for j in range(0, ny):
-    for i in range(0, nz):
-        for k in range(0, time.shape[0]):
-            t[k, i, j] = T0[i]
+t = np.tile(T0[np.newaxis, :, np.newaxis], (time.shape[0], 1, ny))
 
 print(t.shape)
 with open(outdir+"/Te.bin", "wb") as f:
@@ -177,7 +161,7 @@ shutil.copy('data.diagnostics', outdir)
 shutil.copy('data.pkg', outdir+'/data.pkg')
 # also store these.  They are small and helpful to document what we did
 
-for nm in {'input', 'code', 'build_options', 'analysis'}:
+for nm in {'input', 'code', 'analysis'}:
     to_path = outdir+'/'+nm
     if os.path.exists(to_path):
         shutil.rmtree(to_path)
